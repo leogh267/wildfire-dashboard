@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import dash
 from dash import html, dcc
@@ -62,4 +63,5 @@ def reg_year_display(input_region,input_year):
             dcc.Graph(figure=fig2) ]
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8050)
+    port = int(os.environ.get("PORT", 8050))
+    app.run(host='0.0.0.0', port=port)
