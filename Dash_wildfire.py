@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import dash
-from dash import html, dcc
+from dash import html, dcc, callback_context
 from dash.dependencies import Input, Output
 import plotly.express as px
 
@@ -54,6 +54,9 @@ graph_container_style = {
     "minWidth": "450px"
 }
 
+year_min = int(df["Year"].min())
+year_max = int(df["Year"].max())
+
 app.layout = html.Div(
     style={"backgroundColor": "#f4f6f9", "padding": "20px"},
     children=[
@@ -89,14 +92,17 @@ app.layout = html.Div(
                     ]
                 ),
                 html.Div(
-                    style={"flex": "1", "minWidth": "180px"},
+                    style={"flex": "1", "minWidth": "300px"},
                     children=[
                         html.H3("Select Year"),
-                        dcc.Dropdown(
-                            options=sorted(df["Year"].unique()),
+                        dcc.Slider(
+                            min=year_min,
+                            max=year_max,
+                            step=1,
                             value=2005,
+                            marks={year: str(year) for year in range(year_min, year_max + 1)},
                             id="year",
-                            clearable=False
+                            tooltip={"placement": "bottom", "always_visible": False}
                         )
                     ]
                 )
@@ -116,7 +122,10 @@ app.layout = html.Div(
             style={"display": "flex", "flexWrap": "wrap"},
             children=[
                 html.Div(id="plot1", style=graph_container_style),
-                html.Div(id="plot2", style=graph_container_style),
+                html.Div(
+                    dcc.Graph(id="plot2-graph"),
+                    style=graph_container_style
+                ),
             ]
         ),
 
@@ -131,10 +140,30 @@ app.layout = html.Div(
 )
 
 @app.callback(
+    Output("year", "value"),
+    [
+        Input("plot2-graph", "clickData"),
+        Input("year", "value"),
+    ]
+)
+def update_year_from_plot(click_data, slider_year):
+    ctx = callback_context
+
+    if not ctx.triggered:
+        return slider_year
+
+    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if trigger_id == "plot2-graph" and click_data:
+        return int(click_data["points"][0]["x"])
+
+    return slider_year
+
+@app.callback(
     [
         Output("kpi-cards", "children"),
         Output("plot1", "children"),
-        Output("plot2", "children"),
+        Output("plot2-graph", "figure"),
         Output("plot3", "children"),
         Output("plot4", "children"),
     ],
@@ -270,7 +299,7 @@ def update_dashboard(selected_region, selected_year):
     return (
         kpis,
         dcc.Graph(figure=fig1),
-        dcc.Graph(figure=fig2),
+        fig2,
         dcc.Graph(figure=fig3),
         dcc.Graph(figure=fig4),
     )
