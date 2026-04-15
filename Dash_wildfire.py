@@ -236,6 +236,16 @@ def update_dashboard(selected_region, selected_year):
         markers=True,
         title=f"{selected_region}: Total Fire Count Over Years"
     )
+
+    marker_sizes = [
+        14 if year == selected_year else 6
+        for year in yearly_count["Year"]
+    ]
+
+    fig2.update_traces(
+        marker=dict(size=marker_sizes)
+    )
+
     fig2.update_layout(
         xaxis_title="Year",
         yaxis_title="Total Fire Count"
